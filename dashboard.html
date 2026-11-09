@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | BlogSpace</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/main.js" defer></script>
+</head>
+<body data-page="dashboard">
+
+    <header class="navbar">
+        <a href="index.html" class="logo">BlogSpace<span>.</span></a>
+
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="create-blog.html">Write Blog</a>
+            <button class="nav-link-button" id="logoutButton">Logout</button>
+        </nav>
+    </header>
+
+    <main class="dashboard-section">
+        <section class="dashboard-welcome">
+            <p class="eyebrow">YOUR PERSONAL SPACE</p>
+            <h1>Welcome, <span id="userName">Writer</span>!</h1>
+            <p>Manage your stories and share new ideas.</p>
+
+            <a href="create-blog.html" class="primary-button">
+                + Create New Blog
+            </a>
+        </section>
+
+        <section class="blogs-section dashboard-blogs">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">YOUR WRITING</p>
+                    <h2>My Blogs</h2>
+                </div>
+            </div>
+
+            <p class="status-message" id="dashboardMessage"></p>
+            <div class="blog-grid" id="myBlogs"></div>
+        </section>
+    </main>
+
+    <footer>
+        <p>© 2026 BlogSpace. Built for curious minds.</p>
+    </footer>
+
+</body>
+</html>

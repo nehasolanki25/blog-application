@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register | BlogSpace</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/main.js" defer></script>
+</head>
+<body data-page="register">
+
+    <header class="navbar">
+        <a href="index.html" class="logo">BlogSpace<span>.</span></a>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="login.html">Login</a>
+        </nav>
+    </header>
+
+    <main class="auth-section">
+        <form class="auth-card" id="registerForm">
+            <p class="eyebrow">JOIN OUR COMMUNITY</p>
+            <h1>Create Account</h1>
+            <p class="form-description">
+                Create an account and start sharing your stories.
+            </p>
+
+            <label for="name">Full Name</label>
+            <input
+                type="text"
+                id="name"
+                placeholder="Enter your name"
+                required
+            >
+
+            <label for="email">Email Address</label>
+            <input
+                type="email"
+                id="email"
+                placeholder="Enter your email"
+                required
+            >
+
+            <label for="password">Password</label>
+            <input
+                type="password"
+                id="password"
+                placeholder="Minimum 8 characters"
+                minlength="8"
+                required
+            >
+
+            <p class="form-message" id="registerMessage"></p>
+
+            <button type="submit" class="primary-button full-button">
+                Create Account
+            </button>
+
+            <p class="auth-switch">
+                Already have an account?
+                <a href="login.html">Login</a>
+            </p>
+        </form>
+    </main>
+
+</body>
+</html>

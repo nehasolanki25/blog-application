@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | BlogSpace</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/main.js" defer></script>
+</head>
+<body data-page="login">
+
+    <header class="navbar">
+        <a href="index.html" class="logo">BlogSpace<span>.</span></a>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="register.html">Register</a>
+        </nav>
+    </header>
+
+    <main class="auth-section">
+        <form class="auth-card" id="loginForm">
+            <p class="eyebrow">WELCOME BACK</p>
+            <h1>Login to BlogSpace</h1>
+            <p class="form-description">
+                Login to continue sharing your ideas.
+            </p>
+
+            <label for="email">Email Address</label>
+            <input
+                type="email"
+                id="email"
+                placeholder="Enter your email"
+                required
+            >
+
+            <label for="password">Password</label>
+            <input
+                type="password"
+                id="password"
+                placeholder="Enter your password"
+                required
+            >
+
+            <p class="form-message" id="loginMessage"></p>
+
+            <button type="submit" class="primary-button full-button">
+                Login
+            </button>
+
+            <p class="auth-switch">
+                Don't have an account?
+                <a href="register.html">Register</a>
+            </p>
+        </form>
+    </main>
+
+</body>
+</html>
