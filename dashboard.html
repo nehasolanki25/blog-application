@@ -20,35 +20,45 @@
     </header>
 
     <main class="dashboard-section">
-        <section class="blogs-section dashboard-blogs">
-    <div class="section-heading">
-        <div>
-            <p class="eyebrow">YOUR WRITING</p>
-            <h2>My Blogs</h2>
-        </div>
-    </div>
+       
+<section class="dashboard-welcome">
+    <p class="eyebrow">YOUR PERSONAL SPACE</p>
 
-    <div class="blog-filters">
-        <input
-            type="search"
-            id="searchBlogs"
-            placeholder="Search your blogs..."
-        >
+    <h1>Welcome, <span id="userName">Writer</span>!</h1>
 
-        <select id="filterCategory">
-            <option value="">All Categories</option>
-            <option value="Technology">Technology</option>
-            <option value="Programming">Programming</option>
-            <option value="Education">Education</option>
-            <option value="Personal Growth">Personal Growth</option>
-            <option value="Lifestyle">Lifestyle</option>
-            <option value="General">General</option>
-        </select>
-    </div>
+    <p>Manage your stories and share new ideas.</p>
 
-    <p class="status-message" id="dashboardMessage"></p>
-    <div class="blog-grid" id="myBlogs"></div>
+    <a href="create-blog.html" class="primary-button">
+        + Create New Blog
+    </a>
 </section>
+
+<section class="profile-section">
+    <div class="profile-card">
+        <p class="eyebrow">YOUR PROFILE</p>
+
+        <h2>Account Information</h2>
+
+        <p>
+            <strong>Name:</strong>
+            <span id="profileName">Loading...</span>
+        </p>
+
+        <p>
+            <strong>Email:</strong>
+            <span id="profileEmail">Loading...</span>
+        </p>
+
+        <button
+            type="button"
+            class="delete-button"
+            id="profileLogoutButton"
+        >
+            Logout
+        </button>
+    </div>
+</section>
+
     </main>
 
     <footer>

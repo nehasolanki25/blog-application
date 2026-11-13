@@ -2,6 +2,7 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const authenticateToken = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
@@ -10,16 +11,9 @@ router.post("/register", async (req, res) => {
     try {
         const { name, email, password } = req.body;
 
-        if (
-            typeof name !== "string" ||
-            typeof email !== "string" ||
-            typeof password !== "string" ||
-            !name.trim() ||
-            !email.trim() ||
-            !password
-        ) {
+        if (!name?.trim() || !email?.trim() || !password) {
             return res.status(400).json({
-                message: "Please enter valid name, email and password."
+                message: "All fields are required."
             });
         }
 
@@ -41,7 +35,7 @@ router.post("/register", async (req, res) => {
             });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(password, 12);
 
         const user = await User.create({
             name: name.trim(),
@@ -49,7 +43,7 @@ router.post("/register", async (req, res) => {
             password: hashedPassword
         });
 
-        return res.status(201).json({
+        res.status(201).json({
             message: "Registration successful!",
             user: {
                 id: user._id,
@@ -59,31 +53,21 @@ router.post("/register", async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Registration error:", error);
+        console.error("Register error:", error);
 
-        if (error.code === 11000) {
-            return res.status(409).json({
-                message: "Email already registered."
-            });
-        }
-
-        return res.status(500).json({
+        res.status(500).json({
             message: "Registration failed."
         });
     }
 });
+
 
 // LOGIN
 router.post("/login", async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        if (
-            typeof email !== "string" ||
-            typeof password !== "string" ||
-            !email.trim() ||
-            !password
-        ) {
+        if (!email || !password) {
             return res.status(400).json({
                 message: "Email and password are required."
             });
@@ -99,12 +83,12 @@ router.post("/login", async (req, res) => {
             });
         }
 
-        const isPasswordCorrect = await bcrypt.compare(
+        const passwordMatch = await bcrypt.compare(
             password,
             user.password
         );
 
-        if (!isPasswordCorrect) {
+        if (!passwordMatch) {
             return res.status(401).json({
                 message: "Invalid email or password."
             });
@@ -112,14 +96,14 @@ router.post("/login", async (req, res) => {
 
         const token = jwt.sign(
             {
-                id: user._id,
+                id: user._id.toString(),
                 email: user.email
             },
             process.env.JWT_SECRET,
             { expiresIn: "1h" }
         );
 
-        return res.status(200).json({
+        res.json({
             message: "Login successful!",
             token,
             user: {
@@ -132,8 +116,30 @@ router.post("/login", async (req, res) => {
     } catch (error) {
         console.error("Login error:", error);
 
-        return res.status(500).json({
+        res.status(500).json({
             message: "Login failed."
+        });
+    }
+});
+
+
+// GET LOGGED-IN USER PROFILE
+router.get("/me", authenticateToken, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id)
+            .select("name email createdAt");
+
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found."
+            });
+        }
+
+        res.json({ user });
+
+    } catch (error) {
+        res.status(500).json({
+            message: "Could not load profile."
         });
     }
 });

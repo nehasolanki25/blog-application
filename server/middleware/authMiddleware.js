@@ -12,11 +12,17 @@ function authenticateToken(req, res, next) {
     const token = authHeader.split(" ")[1];
 
     try {
-        req.user = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        req.user = {
+            id: decoded.id,
+            email: decoded.email
+        };
+
         next();
     } catch (error) {
         return res.status(401).json({
-            message: "Invalid or expired token."
+            message: "Invalid or expired token. Please log in again."
         });
     }
 }

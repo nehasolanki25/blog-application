@@ -1,17 +1,22 @@
 
-// ======================================
-// API CONFIGURATION
-// ======================================
+// ============================================
+// BLOGSPACE - MAIN JAVASCRIPT
+// ============================================
 
 const API_URL = "http://localhost:5000/api";
 
 
-// ======================================
-// COMMON API FUNCTION
-// ======================================
+// ============================================
+// 1. COMMON API FUNCTION
+// ============================================
 
 async function apiRequest(endpoint, options = {}) {
-    const response = await fetch(`${API_URL}${endpoint}`, options);
+    const response = await fetch(`${API_URL}${endpoint}`, {
+        ...options,
+        headers: {
+            ...(options.headers || {})
+        }
+    });
 
     const data = await response.json().catch(() => ({}));
 
@@ -23,9 +28,9 @@ async function apiRequest(endpoint, options = {}) {
 }
 
 
-// ======================================
-// AUTHENTICATION HELPERS
-// ======================================
+// ============================================
+// 2. AUTHENTICATION HELPERS
+// ============================================
 
 function getToken() {
     return localStorage.getItem("token");
@@ -41,12 +46,17 @@ function getCurrentUser() {
 
 function saveUserSession(data) {
     localStorage.setItem("token", data.token);
-    localStorage.setItem("user", JSON.stringify(data.user));
+
+    localStorage.setItem(
+        "user",
+        JSON.stringify(data.user)
+    );
 }
 
 function logout() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+
     window.location.href = "login.html";
 }
 
@@ -60,9 +70,9 @@ function requireLogin() {
 }
 
 
-// ======================================
-// MESSAGE HELPER
-// ======================================
+// ============================================
+// 3. MESSAGE HELPER
+// ============================================
 
 function showMessage(elementId, message, type = "") {
     const element = document.getElementById(elementId);
@@ -74,9 +84,9 @@ function showMessage(elementId, message, type = "") {
 }
 
 
-// ======================================
-// REGISTER USER
-// ======================================
+// ============================================
+// 4. REGISTER USER
+// ============================================
 
 async function handleRegister(event) {
     event.preventDefault();
@@ -89,6 +99,15 @@ async function handleRegister(event) {
 
     showMessage("registerMessage", "");
 
+    if (!name || !email || !password) {
+        showMessage(
+            "registerMessage",
+            "Please fill all fields.",
+            "error"
+        );
+        return;
+    }
+
     if (password.length < 8) {
         showMessage(
             "registerMessage",
@@ -99,18 +118,28 @@ async function handleRegister(event) {
     }
 
     try {
-        button.disabled = true;
-        button.textContent = "Creating Account...";
+        if (button) {
+            button.disabled = true;
+            button.textContent = "Creating Account...";
+        }
 
         const data = await apiRequest("/auth/register", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({ name, email, password })
+            body: JSON.stringify({
+                name,
+                email,
+                password
+            })
         });
 
-        showMessage("registerMessage", data.message, "success");
+        showMessage(
+            "registerMessage",
+            data.message,
+            "success"
+        );
 
         event.target.reset();
 
@@ -119,17 +148,24 @@ async function handleRegister(event) {
         }, 1000);
 
     } catch (error) {
-        showMessage("registerMessage", error.message, "error");
+        showMessage(
+            "registerMessage",
+            error.message,
+            "error"
+        );
+
     } finally {
-        button.disabled = false;
-        button.textContent = "Create Account";
+        if (button) {
+            button.disabled = false;
+            button.textContent = "Create Account";
+        }
     }
 }
 
 
-// ======================================
-// LOGIN USER
-// ======================================
+// ============================================
+// 5. LOGIN USER
+// ============================================
 
 async function handleLogin(event) {
     event.preventDefault();
@@ -142,15 +178,20 @@ async function handleLogin(event) {
     showMessage("loginMessage", "");
 
     try {
-        button.disabled = true;
-        button.textContent = "Logging in...";
+        if (button) {
+            button.disabled = true;
+            button.textContent = "Logging in...";
+        }
 
         const data = await apiRequest("/auth/login", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({
+                email,
+                password
+            })
         });
 
         saveUserSession(data);
@@ -158,17 +199,60 @@ async function handleLogin(event) {
         window.location.href = "dashboard.html";
 
     } catch (error) {
-        showMessage("loginMessage", error.message, "error");
+        showMessage(
+            "loginMessage",
+            error.message,
+            "error"
+        );
+
     } finally {
-        button.disabled = false;
-        button.textContent = "Login";
+        if (button) {
+            button.disabled = false;
+            button.textContent = "Login";
+        }
     }
 }
 
 
-// ======================================
-// CREATE OR UPDATE BLOG
-// ======================================
+// ============================================
+// 6. LOAD USER PROFILE
+// ============================================
+
+async function loadUserProfile() {
+    const data = await apiRequest("/auth/me", {
+        headers: {
+            Authorization: `Bearer ${getToken()}`
+        }
+    });
+
+    const user = data.user;
+
+    const userData = {
+        id: user._id,
+        name: user.name,
+        email: user.email
+    };
+
+    localStorage.setItem(
+        "user",
+        JSON.stringify(userData)
+    );
+
+    const userName = document.getElementById("userName");
+    const profileName = document.getElementById("profileName");
+    const profileEmail = document.getElementById("profileEmail");
+
+    if (userName) userName.textContent = user.name;
+    if (profileName) profileName.textContent = user.name;
+    if (profileEmail) profileEmail.textContent = user.email;
+
+    return userData;
+}
+
+
+// ============================================
+// 7. CREATE OR UPDATE BLOG
+// ============================================
 
 async function handleCreateBlog(event) {
     event.preventDefault();
@@ -186,39 +270,70 @@ async function handleCreateBlog(event) {
 
     showMessage("createBlogMessage", "");
 
-    try {
-        button.disabled = true;
-        button.textContent = isEditing ? "Updating..." : "Publishing...";
-
-        const data = await apiRequest(
-            isEditing ? `/blogs/${encodeURIComponent(blogId)}` : "/blogs",
-            {
-                method: isEditing ? "PUT" : "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${getToken()}`
-                },
-                body: JSON.stringify({ title, content, category })
-            }
+    if (!title || !content) {
+        showMessage(
+            "createBlogMessage",
+            "Title and content are required.",
+            "error"
         );
+        return;
+    }
 
-        showMessage("createBlogMessage", data.message, "success");
+    try {
+        if (button) {
+            button.disabled = true;
+            button.textContent = isEditing
+                ? "Updating..."
+                : "Publishing...";
+        }
+
+        const endpoint = isEditing
+            ? `/blogs/${encodeURIComponent(blogId)}`
+            : "/blogs";
+
+        const data = await apiRequest(endpoint, {
+            method: isEditing ? "PUT" : "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${getToken()}`
+            },
+            body: JSON.stringify({
+                title,
+                content,
+                category
+            })
+        });
+
+        showMessage(
+            "createBlogMessage",
+            data.message,
+            "success"
+        );
 
         window.location.href =
             `blog-details.html?id=${encodeURIComponent(data.blog._id)}`;
 
     } catch (error) {
-        showMessage("createBlogMessage", error.message, "error");
+        showMessage(
+            "createBlogMessage",
+            error.message,
+            "error"
+        );
+
     } finally {
-        button.disabled = false;
-        button.textContent = isEditing ? "Update Blog" : "Publish Blog";
+        if (button) {
+            button.disabled = false;
+            button.textContent = isEditing
+                ? "Update Blog"
+                : "Publish Blog";
+        }
     }
 }
 
 
-// ======================================
-// LOAD BLOG DATA FOR EDITING
-// ======================================
+// ============================================
+// 8. LOAD BLOG FOR EDITING
+// ============================================
 
 async function loadBlogForEditing() {
     const params = new URLSearchParams(window.location.search);
@@ -226,17 +341,18 @@ async function loadBlogForEditing() {
 
     if (!blogId) return;
 
-    const user = getCurrentUser();
-
     try {
         const data = await apiRequest(
             `/blogs/${encodeURIComponent(blogId)}`
         );
 
         const blog = data.blog;
+
+        const user = await loadUserProfile();
+
         const authorId = blog.author?._id || blog.author;
 
-        if (authorId !== user?.id) {
+        if (String(authorId) !== String(user.id || user._id)) {
             alert("You cannot edit another user's blog.");
             window.location.href = "dashboard.html";
             return;
@@ -244,33 +360,53 @@ async function loadBlogForEditing() {
 
         document.getElementById("title").value = blog.title;
         document.getElementById("content").value = blog.content;
-        document.getElementById("category").value = blog.category || "General";
+        document.getElementById("category").value =
+            blog.category || "General";
 
-        document.getElementById("formHeading").textContent = "Edit Your Blog";
+        document.getElementById("formHeading").textContent =
+            "Edit Your Blog";
+
         document.getElementById("formDescription").textContent =
             "Update your story and share your latest ideas.";
 
-        document.getElementById("publishButton").textContent = "Update Blog";
+        document.getElementById("publishButton").textContent =
+            "Update Blog";
 
     } catch (error) {
-        showMessage("createBlogMessage", error.message, "error");
+        showMessage(
+            "createBlogMessage",
+            error.message,
+            "error"
+        );
     }
 }
 
 
-// ======================================
-// GET ALL BLOGS
-// ======================================
+// ============================================
+// 9. GET ALL BLOGS
+// ============================================
 
-async function getAllBlogs() {
-    const data = await apiRequest("/blogs");
+async function getAllBlogs(search = "", category = "") {
+    const params = new URLSearchParams();
+
+    if (search) params.set("search", search);
+    if (category) params.set("category", category);
+
+    const query = params.toString();
+
+    const endpoint = query
+        ? `/blogs?${query}`
+        : "/blogs";
+
+    const data = await apiRequest(endpoint);
+
     return data.blogs;
 }
 
 
-// ======================================
-// CREATE BLOG CARD
-// ======================================
+// ============================================
+// 10. CREATE BLOG CARD
+// ============================================
 
 function createBlogCard(blog, showActions = false) {
     const card = document.createElement("article");
@@ -289,24 +425,31 @@ function createBlogCard(blog, showActions = false) {
     const excerpt = document.createElement("p");
     excerpt.className = "blog-excerpt";
 
-    const shortContent = blog.content || "";
-
     excerpt.textContent =
-        shortContent.length > 120
-            ? shortContent.substring(0, 120) + "..."
-            : shortContent;
+        blog.content.length > 120
+            ? blog.content.substring(0, 120) + "..."
+            : blog.content;
 
     const author = document.createElement("p");
     author.className = "author";
-    author.textContent = `By ${blog.author?.name || "Unknown Author"}`;
+
+    author.textContent =
+        `By ${blog.author?.name || "Unknown Author"}`;
 
     const readMore = document.createElement("a");
     readMore.className = "read-more";
     readMore.textContent = "Read More →";
+
     readMore.href =
         `blog-details.html?id=${encodeURIComponent(blog._id)}`;
 
-    content.append(category, title, excerpt, author, readMore);
+    content.append(
+        category,
+        title,
+        excerpt,
+        author,
+        readMore
+    );
 
     if (showActions) {
         const actions = document.createElement("div");
@@ -341,9 +484,9 @@ function createBlogCard(blog, showActions = false) {
 }
 
 
-// ======================================
-// HOME PAGE BLOGS
-// ======================================
+// ============================================
+// 11. HOME PAGE BLOGS
+// ============================================
 
 async function loadHomeBlogs() {
     const blogGrid = document.getElementById("blogGrid");
@@ -364,7 +507,9 @@ async function loadHomeBlogs() {
         message.textContent = "";
 
         blogs.forEach(blog => {
-            blogGrid.appendChild(createBlogCard(blog));
+            blogGrid.appendChild(
+                createBlogCard(blog)
+            );
         });
 
     } catch (error) {
@@ -374,9 +519,9 @@ async function loadHomeBlogs() {
 }
 
 
-// ======================================
-// DASHBOARD
-// ======================================
+// ============================================
+// 12. DASHBOARD BLOGS
+// ============================================
 
 let dashboardBlogs = [];
 
@@ -384,10 +529,11 @@ function renderDashboardBlogs() {
     const myBlogs = document.getElementById("myBlogs");
     const message = document.getElementById("dashboardMessage");
 
+    if (!myBlogs || !message) return;
+
     const searchValue =
-        document.getElementById("searchBlogs")?.value
-            .trim()
-            .toLowerCase() || "";
+        document.getElementById("searchBlogs")
+            ?.value.trim().toLowerCase() || "";
 
     const selectedCategory =
         document.getElementById("filterCategory")?.value || "";
@@ -398,7 +544,8 @@ function renderDashboardBlogs() {
             blog.content.toLowerCase().includes(searchValue);
 
         const matchesCategory =
-            !selectedCategory || blog.category === selectedCategory;
+            !selectedCategory ||
+            blog.category === selectedCategory;
 
         return matchesSearch && matchesCategory;
     });
@@ -407,7 +554,7 @@ function renderDashboardBlogs() {
 
     if (filteredBlogs.length === 0) {
         message.textContent = dashboardBlogs.length === 0
-            ? "You haven't published any blogs yet. Create your first blog!"
+            ? "You haven't published any blogs yet."
             : "No blogs match your search or category.";
 
         return;
@@ -416,7 +563,9 @@ function renderDashboardBlogs() {
     message.textContent = "";
 
     filteredBlogs.forEach(blog => {
-        myBlogs.appendChild(createBlogCard(blog, true));
+        myBlogs.appendChild(
+            createBlogCard(blog, true)
+        );
     });
 }
 
@@ -424,35 +573,38 @@ function renderDashboardBlogs() {
 async function loadDashboard() {
     if (!requireLogin()) return;
 
-    const user = getCurrentUser();
-
-    const userName = document.getElementById("userName");
     const message = document.getElementById("dashboardMessage");
 
-    if (userName) {
-        userName.textContent = user?.name || "Writer";
-    }
-
     try {
-        const blogs = await getAllBlogs();
+        await loadUserProfile();
 
-        dashboardBlogs = blogs.filter(blog => {
-            const authorId = blog.author?._id || blog.author;
-            return String(authorId) === String(user?.id);
+        const data = await apiRequest("/blogs/mine", {
+            headers: {
+                Authorization: `Bearer ${getToken()}`
+            }
         });
+
+        dashboardBlogs = data.blogs;
 
         renderDashboardBlogs();
 
     } catch (error) {
         message.textContent = error.message;
         message.className = "status-message error";
+
+        if (
+            error.message.toLowerCase().includes("token") ||
+            error.message.toLowerCase().includes("log in")
+        ) {
+            logout();
+        }
     }
 }
 
 
-// ======================================
-// DELETE BLOG
-// ======================================
+// ============================================
+// 13. DELETE BLOG
+// ============================================
 
 async function deleteBlog(blogId) {
     const confirmed = confirm(
@@ -467,16 +619,14 @@ async function deleteBlog(blogId) {
             {
                 method: "DELETE",
                 headers: {
-                    "Authorization": `Bearer ${getToken()}`
+                    Authorization: `Bearer ${getToken()}`
                 }
             }
         );
 
         alert(data.message);
 
-        const page = document.body.dataset.page;
-
-        if (page === "dashboard") {
+        if (document.body.dataset.page === "dashboard") {
             dashboardBlogs = dashboardBlogs.filter(
                 blog => blog._id !== blogId
             );
@@ -492,9 +642,9 @@ async function deleteBlog(blogId) {
 }
 
 
-// ======================================
-// SINGLE BLOG DETAILS
-// ======================================
+// ============================================
+// 14. SINGLE BLOG DETAILS
+// ============================================
 
 async function loadBlogDetails() {
     const title = document.getElementById("detailTitle");
@@ -533,21 +683,27 @@ async function loadBlogDetails() {
 
         document.title = `${blog.title} | BlogSpace`;
 
-        // Show edit/delete only to the blog owner.
         const user = getCurrentUser();
         const authorId = blog.author?._id || blog.author;
 
-        if (user?.id && String(authorId) === String(user.id)) {
-            document.getElementById("blogActions").hidden = false;
+        if (
+            user?.id &&
+            String(authorId) === String(user.id)
+        ) {
+            const actions = document.getElementById("blogActions");
+
+            if (actions) {
+                actions.hidden = false;
+            }
 
             document.getElementById("editBlogButton")
-                .addEventListener("click", () => {
+                ?.addEventListener("click", () => {
                     window.location.href =
                         `create-blog.html?id=${encodeURIComponent(blog._id)}`;
                 });
 
             document.getElementById("deleteBlogButton")
-                .addEventListener("click", () => {
+                ?.addEventListener("click", () => {
                     deleteBlog(blog._id);
                 });
         }
@@ -560,9 +716,9 @@ async function loadBlogDetails() {
 }
 
 
-// ======================================
-// NAVBAR AUTHENTICATION
-// ======================================
+// ============================================
+// 15. NAVBAR
+// ============================================
 
 function updateNavbar() {
     const loggedIn = Boolean(getToken());
@@ -570,8 +726,8 @@ function updateNavbar() {
     const loginNav = document.getElementById("loginNav");
     const registerNav = document.getElementById("registerNav");
     const dashboardNav = document.getElementById("dashboardNav");
-    const writeBlogLink = document.getElementById("writeBlogLink");
     const logoutButton = document.getElementById("logoutButton");
+    const writeBlogLink = document.getElementById("writeBlogLink");
 
     if (loginNav) loginNav.hidden = loggedIn;
     if (registerNav) registerNav.hidden = loggedIn;
@@ -584,45 +740,46 @@ function updateNavbar() {
 }
 
 
-// ======================================
-// INITIALIZE APPLICATION
-// ======================================
+// ============================================
+// 16. INITIALIZE APPLICATION
+// ============================================
 
 document.addEventListener("DOMContentLoaded", () => {
     const page = document.body.dataset.page;
 
     updateNavbar();
 
-    const logoutButton = document.getElementById("logoutButton");
+    document.getElementById("logoutButton")
+        ?.addEventListener("click", logout);
 
-    if (logoutButton) {
-        logoutButton.addEventListener("click", logout);
-    }
+    document.getElementById("profileLogoutButton")
+        ?.addEventListener("click", logout);
 
+
+    // REGISTER PAGE
     if (page === "register") {
         document.getElementById("registerForm")
             ?.addEventListener("submit", handleRegister);
     }
 
+
+    // LOGIN PAGE
     if (page === "login") {
         document.getElementById("loginForm")
             ?.addEventListener("submit", handleLogin);
     }
 
-    if (page === "create-blog") {
-        if (!requireLogin()) return;
 
-        document.getElementById("createBlogForm")
-            ?.addEventListener("submit", handleCreateBlog);
-
-        loadBlogForEditing();
-    }
-
+    // HOME PAGE
     if (page === "home") {
         loadHomeBlogs();
     }
 
+
+    // DASHBOARD PAGE
     if (page === "dashboard") {
+        if (!requireLogin()) return;
+
         loadDashboard();
 
         document.getElementById("searchBlogs")
@@ -632,6 +789,19 @@ document.addEventListener("DOMContentLoaded", () => {
             ?.addEventListener("change", renderDashboardBlogs);
     }
 
+
+    // CREATE / EDIT BLOG PAGE
+    if (page === "create-blog") {
+        if (!requireLogin()) return;
+
+        document.getElementById("createBlogForm")
+            ?.addEventListener("submit", handleCreateBlog);
+
+        loadBlogForEditing();
+    }
+
+
+    // BLOG DETAILS PAGE
     if (page === "blog-details") {
         loadBlogDetails();
     }
