@@ -1,6 +1,6 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const Blog = require("../models/Blog");
-const User = require("../models/User");
 const authenticateToken = require("../middleware/authMiddleware");
 
 const router = express.Router();
@@ -10,80 +10,75 @@ router.post("/", authenticateToken, async (req, res) => {
     try {
         const { title, content, category } = req.body;
 
-        if (
-            typeof title !== "string" ||
-            typeof content !== "string" ||
-            !title.trim() ||
-            !content.trim()
-        ) {
+        if (!title?.trim() || !content?.trim()) {
             return res.status(400).json({
                 message: "Title and content are required."
-            });
-        }
-
-        const user = await User.findById(req.user.id);
-
-        if (!user) {
-            return res.status(401).json({
-                message: "User not found. Please log in again."
             });
         }
 
         const blog = await Blog.create({
             title: title.trim(),
             content: content.trim(),
-            category: typeof category === "string" && category.trim()
-                ? category.trim()
-                : "General",
-            author: user._id
+            category: category?.trim() || "General",
+            author: req.user.id
         });
 
-        return res.status(201).json({
+        res.status(201).json({
             message: "Blog created successfully!",
             blog
         });
-
     } catch (error) {
-        console.error("Create blog error:", error);
-
-        return res.status(500).json({
+        res.status(500).json({
             message: "Could not create blog."
         });
     }
 });
 
-// GET ALL BLOGS
+// READ ALL BLOGS + SEARCH + CATEGORY FILTER
 router.get("/", async (req, res) => {
     try {
-        const blogs = await Blog.find()
+        const { search, category } = req.query;
+
+        const filter = {};
+
+        if (search?.trim()) {
+            const safeSearch = search.trim().replace(
+                /[.*+?^${}()|[\]\\]/g,
+                "\\$&"
+            );
+
+            filter.$or = [
+                { title: { $regex: safeSearch, $options: "i" } },
+                { content: { $regex: safeSearch, $options: "i" } }
+            ];
+        }
+
+        if (category?.trim()) {
+            filter.category = category.trim();
+        }
+
+        const blogs = await Blog.find(filter)
             .populate("author", "name")
             .sort({ createdAt: -1 });
 
-        return res.status(200).json({
-            blogs
-        });
-
+        res.json({ blogs });
     } catch (error) {
-        console.error("Get blogs error:", error);
-
-        return res.status(500).json({
+        res.status(500).json({
             message: "Could not fetch blogs."
         });
     }
 });
 
-// GET SINGLE BLOG
+// READ SINGLE BLOG
 router.get("/:id", async (req, res) => {
     try {
-        const { id } = req.params;
-
-        if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+        if (!mongoose.isValidObjectId(req.params.id)) {
             return res.status(400).json({
                 message: "Invalid blog ID."
             });
         }
 
-        const blog = await Blog.findById(id)
+        const blog = await Blog.findById(req.params.id)
             .populate("author", "name");
 
         if (!blog) {
@@ -92,15 +87,93 @@ router.get("/:id", async (req, res) => {
             });
         }
 
-        return res.status(200).json({
+        res.json({ blog });
+    } catch (error) {
+        res.status(500).json({
+            message: "Could not fetch blog details."
+        });
+    }
+});
+
+// UPDATE BLOG
+router.put("/:id", authenticateToken, async (req, res) => {
+    try {
+        const { title, content, category } = req.body;
+
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            return res.status(400).json({
+                message: "Invalid blog ID."
+            });
+        }
+
+        if (!title?.trim() || !content?.trim()) {
+            return res.status(400).json({
+                message: "Title and content are required."
+            });
+        }
+
+        const blog = await Blog.findById(req.params.id);
+
+        if (!blog) {
+            return res.status(404).json({
+                message: "Blog not found."
+            });
+        }
+
+        if (blog.author.toString() !== req.user.id) {
+            return res.status(403).json({
+                message: "You cannot edit another user's blog."
+            });
+        }
+
+        blog.title = title.trim();
+        blog.content = content.trim();
+        blog.category = category?.trim() || "General";
+
+        await blog.save();
+
+        res.json({
+            message: "Blog updated successfully!",
             blog
         });
-
     } catch (error) {
-        console.error("Get single blog error:", error);
+        res.status(500).json({
+            message: "Could not update blog."
+        });
+    }
+});
 
-        return res.status(500).json({
-            message: "Could not fetch blog details."
+// DELETE BLOG
+router.delete("/:id", authenticateToken, async (req, res) => {
+    try {
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            return res.status(400).json({
+                message: "Invalid blog ID."
+            });
+        }
+
+        const blog = await Blog.findById(req.params.id);
+
+        if (!blog) {
+            return res.status(404).json({
+                message: "Blog not found."
+            });
+        }
+
+        if (blog.author.toString() !== req.user.id) {
+            return res.status(403).json({
+                message: "You cannot delete another user's blog."
+            });
+        }
+
+        await Blog.findByIdAndDelete(req.params.id);
+
+        res.json({
+            message: "Blog deleted successfully!"
+        });
+    } catch (error) {
+        res.status(500).json({
+            message: "Could not delete blog."
         });
     }
 });
